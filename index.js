@@ -4,6 +4,8 @@ const cors = require("cors");
 const app = express();
 const bodyParser = require("body-parser");
 const validUrl = require("valid-url");
+const dns = require("dns");
+const urlParser = require("url");
 // Mongoose
 const mongoose = require("mongoose");
 mongoose.connect(process.env.MONGO_URI, {
@@ -33,40 +35,43 @@ app.get("/api/hello", function (req, res) {
     res.json({ greeting: "hello API" });
 });
 
-app.get("/api/shorturl/:short_url",  (req, res) => {
-     Url.find({
+app.get("/api/shorturl/:short_url", (req, res) => {
+    Url.find({
         short_url: req.params.short_url,
     })
         .then((doc) => {
-            res.redirect(doc[0].original_url)
+            res.redirect(doc[0].original_url);
         })
         .catch((err) => {
             console.error(err);
-        })
+        });
 });
 
 app.post("/api/shorturl", async (req, res) => {
-    const count = await Url.find({}).countDocuments();
-    if (validUrl.isUri(req.body.url)) {
-        let url = new Url({
-            original_url: req.body.url,
-            short_url: count,
-        });
-        url.save()
-            .then((doc) => {
-                res.json({
-                    original_url: doc.original_url,
-                    short_url: doc.short_url,
-                });
-            })
-            .catch((err) => {
-                console.error(err);
+    const original_url = req.body.url;
+    const url = urlParser.parse(original_url);
+    dns.lookup(url.hostname, async (err) => {
+        if (err) {
+            res.json({ error: "invalid url" });
+        } else {
+            const count = await Url.countDocuments();
+            const newUrl = new Url({
+                original_url: original_url,
+                short_url: count,
             });
-    } else {
-        res.json({
-            error: "invalid url",
-        });
-    }
+            newUrl
+                .save()
+                .then((doc) => {
+                    res.json({
+                        original_url: doc.original_url,
+                        short_url: doc.short_url,
+                    });
+                })
+                .catch((err) => {
+                    console.error(err);
+                });
+        }
+    });
 });
 
 app.listen(port, function () {
