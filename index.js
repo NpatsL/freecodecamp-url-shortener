@@ -4,7 +4,6 @@ const cors = require("cors");
 const app = express();
 const bodyParser = require("body-parser");
 const dns = require("dns");
-const urlParser = require("url");
 // Mongoose
 const mongoose = require("mongoose");
 mongoose.connect(process.env.MONGO_URI, {
@@ -44,10 +43,10 @@ app.get("/api/shorturl/:short_url", (req, res) => {
 
 app.post("/api/shorturl", async (req, res) => {
     const original_url = req.body.url;
-    const url = urlParser.parse(original_url);
-    dns.lookup(url.hostname, async (err) => {
-        if (err) {
-            res.json({ error: "invalid url" });
+    const url = new URL(original_url);
+    dns.lookup(url.hostname, async (address) => {
+        if (address) {
+            res.json({ error: "Invalid url" });
         } else {
             const count = await Url.countDocuments();
             const newUrl = new Url({
