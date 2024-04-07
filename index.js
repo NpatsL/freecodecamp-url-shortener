@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const bodyParser = require("body-parser");
-const validUrl = require("valid-url");
 const dns = require("dns");
 const urlParser = require("url");
 // Mongoose
@@ -17,6 +16,7 @@ const urlSchema = new mongoose.Schema({
     short_url: Number,
 });
 var Url = mongoose.model("Url", urlSchema);
+
 // Basic Configuration
 const port = process.env.PORT || 3000;
 
@@ -28,11 +28,6 @@ app.use("/public", express.static(`${process.cwd()}/public`));
 
 app.get("/", function (req, res) {
     res.sendFile(process.cwd() + "/views/index.html");
-});
-
-// Your first API endpoint
-app.get("/api/hello", function (req, res) {
-    res.json({ greeting: "hello API" });
 });
 
 app.get("/api/shorturl/:short_url", (req, res) => {
